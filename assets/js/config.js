@@ -10,5 +10,5 @@
  * ==========================================================================
  */
 const CONFIG = {
-  API_URL: 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'
+  API_URL: 'https://script.google.com/macros/s/AKfycbyMYOh62B0dueFePVBfqpkREQ9Br5kmB_0N_sZ8uhFLuXvBIiQDWF9jTC7GMJC63oPj/exec'
 };
