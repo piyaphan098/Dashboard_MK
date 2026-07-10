@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Data — Marketing Budget Dashboard</title>
+<meta name="description" content="นำเข้าข้อมูลงบประมาณเดิมจากไฟล์ Excel เข้าสู่ระบบ">
+
+<link rel="icon" href="data:,">
+
+<!-- ===== Google Fonts: Prompt (Display) / Sarabun (Body) / IBM Plex Mono (ตัวเลข) ===== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ===== Bootstrap 5 ===== -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- ===== Font Awesome ===== -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- ===== Custom Stylesheets ===== -->
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/import.css">
+</head>
+<body>
+
+<!-- ===================================================== -->
+<!-- SIDEBAR NAVIGATION (ใช้ร่วมกับ index.html)              -->
+<!-- ===================================================== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__brand">
+    <span class="brand-mark"><i class="fa-solid fa-mug-saucer"></i></span>
+    <div class="brand-text">
+      <span class="brand-title">Budget<strong>Desk</strong></span>
+      <span class="brand-subtitle">Marketing Dashboard</span>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav" id="sidebarNav">
+    <a href="index.html#dashboard" class="nav-link" data-section="dashboard">
+      <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+    </a>
+    <a href="index.html#projects" class="nav-link" data-section="projects">
+      <i class="fa-solid fa-layer-group"></i><span>Projects</span>
+    </a>
+    <a href="import.html" class="nav-link active" data-section="import">
+      <i class="fa-solid fa-file-import"></i><span>Import Data</span>
+    </a>
+    <a href="index.html#reports" class="nav-link" data-section="reports">
+      <i class="fa-solid fa-file-export"></i><span>Reports</span>
+    </a>
+    <a href="index.html#settings" class="nav-link" data-section="settings">
+      <i class="fa-solid fa-gear"></i><span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="sidebar__footer">
+    <button class="btn-collapse" id="btnCollapseSidebar" aria-label="ย่อเมนู">
+      <i class="fa-solid fa-angles-left"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ===================================================== -->
+<!-- MAIN CONTENT WRAPPER                                   -->
+<!-- ===================================================== -->
+<div class="main-wrapper">
+
+  <header class="topbar">
+    <button class="topbar__menu-btn" id="btnToggleSidebar" aria-label="เปิด/ปิดเมนู">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="topbar__title">
+      <h1>Import Data</h1>
+      <p class="text-muted-sm">นำเข้าข้อมูลงบประมาณเดิมจากไฟล์ Excel เข้าสู่ระบบ</p>
+    </div>
+    <div class="topbar__filters">
+      <button class="btn btn-sync" id="btnShowHistory" title="ดูประวัติการ Import">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index:1080;"></div>
+
+  <main class="content" id="content">
+
+    <!-- ================= STEP WIZARD ================= -->
+    <section class="page-section active">
+
+      <!-- ---- Stepper Indicator ---- -->
+      <ol class="wizard-stepper" id="wizardStepper" aria-label="ขั้นตอนการนำเข้าข้อมูล">
+        <li class="wizard-step is-active" data-step="1">
+          <span class="wizard-step__circle"><i class="fa-solid fa-file-arrow-up"></i></span>
+          <span class="wizard-step__label">Upload &amp; Select Sheet</span>
+        </li>
+        <li class="wizard-step" data-step="2">
+          <span class="wizard-step__circle"><i class="fa-solid fa-table"></i></span>
+          <span class="wizard-step__label">Preview Data</span>
+        </li>
+        <li class="wizard-step" data-step="3">
+          <span class="wizard-step__circle"><i class="fa-solid fa-arrows-left-right"></i></span>
+          <span class="wizard-step__label">Column Mapping</span>
+        </li>
+        <li class="wizard-step" data-step="4">
+          <span class="wizard-step__circle"><i class="fa-solid fa-circle-check"></i></span>
+          <span class="wizard-step__label">Validation</span>
+        </li>
+        <li class="wizard-step" data-step="5">
+          <span class="wizard-step__circle"><i class="fa-solid fa-upload"></i></span>
+          <span class="wizard-step__label">Import</span>
+        </li>
+      </ol>
+
+      <div class="panel wizard-panel">
+        <div class="panel__body">
+
+          <!-- ============ STEP 1 : Upload & Select Sheet ============ -->
+          <div class="wizard-step-panel is-active" id="stepPanel-1">
+
+            <div class="dropzone" id="dropzone" tabindex="0" role="button"
+                 aria-label="ลากไฟล์ Excel มาวาง หรือคลิกเพื่อเลือกไฟล์">
+              <input type="file" id="fileInput" accept=".xls,.xlsx" hidden>
+              <div class="dropzone__icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <p class="dropzone__title">ลากไฟล์ Excel มาวางที่นี่</p>
+              <p class="dropzone__subtitle">หรือ</p>
+              <button type="button" class="btn btn-primary-brown" id="btnChooseFile">เลือกไฟล์</button>
+              <p class="dropzone__hint">รองรับไฟล์ .xls และ .xlsx เท่านั้น</p>
+            </div>
+
+            <!-- แสดงหลังเลือกไฟล์แล้ว -->
+            <div class="file-picked d-none" id="filePickedInfo">
+              <div class="file-picked__row">
+                <i class="fa-solid fa-file-excel file-picked__icon"></i>
+                <div class="file-picked__meta">
+                  <span class="file-picked__name" id="pickedFileName">-</span>
+                  <span class="file-picked__size" id="pickedFileSize">-</span>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnRemoveFile">
+                  <i class="fa-solid fa-xmark"></i> เปลี่ยนไฟล์
+                </button>
+              </div>
+            </div>
+
+            <div class="sheet-select d-none" id="sheetSelectBlock">
+              <label class="form-label">เลือก Sheet ที่ต้องการนำเข้า</label>
+              <div class="sheet-select__list" id="sheetList">
+                <!-- Sheet name radio cards render by excel-reader.js / import.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ============ STEP 2 : Preview Data ============ -->
+          <div class="wizard-step-panel" id="stepPanel-2">
+            <div class="preview-summary" id="previewSummary">
+              <div class="preview-summary__item">
+                <span class="preview-summary__value" id="previewRowCount">0</span>
+                <span class="preview-summary__label">จำนวนแถว</span>
+              </div>
+              <div class="preview-summary__item">
+                <span class="preview-summary__value" id="previewColCount">0</span>
+                <span class="preview-summary__label">จำนวนคอลัมน์</span>
+              </div>
+              <div class="preview-summary__item">
+                <span class="preview-summary__value" id="previewSheetName">-</span>
+                <span class="preview-summary__label">Sheet ที่เลือก</span>
+              </div>
+            </div>
+
+            <p class="text-muted-sm">แสดงตัวอย่างข้อมูล 10 แถวแรก</p>
+            <div class="table-responsive preview-table-wrap">
+              <table class="table app-table" id="tblPreviewData">
+                <thead id="previewTableHead"><!-- header cells render dynamically --></thead>
+                <tbody id="previewTableBody"><!-- sample rows render dynamically --></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ============ STEP 3 : Column Mapping ============ -->
+          <div class="wizard-step-panel" id="stepPanel-3">
+            <div class="mapping-toolbar">
+              <p class="text-muted-sm mb-0">
+                จับคู่คอลัมน์จากไฟล์ Excel กับฟิลด์ของระบบ — ระบบจะจับคู่อัตโนมัติหากชื่อคอลัมน์ตรงกัน
+              </p>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAutoMap">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto Mapping
+              </button>
+            </div>
+
+            <div class="mapping-list" id="mappingList">
+              <!-- แถวจับคู่ Column render โดย mapping.js -->
+              <!-- ตัวอย่างโครงสร้าง 1 แถว -->
+              <div class="mapping-row">
+                <div class="mapping-row__source">
+                  <span class="mapping-row__badge">Excel Column</span>
+                  <span class="mapping-row__value">วันที่</span>
+                </div>
+                <i class="fa-solid fa-arrow-right-long mapping-row__arrow"></i>
+                <div class="mapping-row__target">
+                  <span class="mapping-row__badge">System Field</span>
+                  <select class="form-select form-select-sm">
+                    <option value="Date">Date</option>
+                    <option value="Project">Project</option>
+                    <option value="Description">Description</option>
+                    <option value="Vendor">Vendor</option>
+                    <option value="Amount">Amount</option>
+                    <option value="Category">Category</option>
+                    <option value="Remark">Remark</option>
+                    <option value="">-- ไม่นำเข้า --</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============ STEP 4 : Validation ============ -->
+          <div class="wizard-step-panel" id="stepPanel-4">
+            <div class="validation-summary">
+              <div class="validation-summary__card is-total">
+                <span class="validation-summary__value" id="valTotalCount">0</span>
+                <span class="validation-summary__label">ข้อมูลทั้งหมด</span>
+              </div>
+              <div class="validation-summary__card is-valid">
+                <span class="validation-summary__value" id="valValidCount">0</span>
+                <span class="validation-summary__label">ข้อมูลถูกต้อง</span>
+              </div>
+              <div class="validation-summary__card is-invalid">
+                <span class="validation-summary__value" id="valInvalidCount">0</span>
+                <span class="validation-summary__label">ข้อมูลผิดพลาด</span>
+              </div>
+              <div class="validation-summary__card is-duplicate">
+                <span class="validation-summary__value" id="valDuplicateCount">0</span>
+                <span class="validation-summary__label">ข้อมูลซ้ำ</span>
+              </div>
+            </div>
+
+            <p class="text-muted-sm">
+              แถวที่มีปัญหา (ข้อมูลไม่ครบ / รูปแบบผิด / ข้อมูลซ้ำ) จะถูก Highlight สีแดง พร้อมระบุสาเหตุ —
+              กรุณาแก้ไขในไฟล์ต้นฉบับแล้วอัปโหลดใหม่ หากต้องการนำเข้าเฉพาะแถวที่ถูกต้อง แถวที่ผิดจะถูกข้าม
+              (Skipped) โดยอัตโนมัติตอน Import
+            </p>
+            <div class="table-responsive preview-table-wrap">
+              <table class="table app-table" id="tblValidation">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Project</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Vendor</th>
+                    <th class="text-end">Amount</th>
+                    <th>Remark</th>
+                    <th>สถานะ</th>
+                    <th>สาเหตุ</th>
+                  </tr>
+                </thead>
+                <tbody id="validationTableBody"><!-- render by validator.js --></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ============ STEP 5 : Import ============ -->
+          <div class="wizard-step-panel" id="stepPanel-5">
+
+            <div class="import-mode" id="importModeBlock">
+              <label class="form-label">เลือกรูปแบบการนำเข้าข้อมูล</label>
+              <div class="import-mode__options">
+                <label class="import-mode__option">
+                  <input type="radio" name="importMode" value="append" checked>
+                  <div>
+                    <span class="import-mode__title"><i class="fa-solid fa-plus"></i> Append Data</span>
+                    <span class="import-mode__desc">เพิ่มข้อมูลใหม่ต่อจากข้อมูลเดิม</span>
+                  </div>
+                </label>
+                <label class="import-mode__option">
+                  <input type="radio" name="importMode" value="replace">
+                  <div>
+                    <span class="import-mode__title"><i class="fa-solid fa-rotate"></i> Replace Data</span>
+                    <span class="import-mode__desc">ลบข้อมูลเดิมทั้งหมด แล้วนำเข้าข้อมูลใหม่แทน</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Progress (แสดงระหว่าง Import) -->
+            <div class="import-progress d-none" id="importProgressBlock">
+              <p class="import-progress__status" id="importProgressStatus">กำลัง Import...</p>
+              <div class="progress app-progress">
+                <div class="progress-bar" id="importProgressBar" role="progressbar" style="width:0%"></div>
+              </div>
+              <p class="import-progress__percent" id="importProgressPercent">0%</p>
+            </div>
+
+            <!-- Summary (แสดงหลัง Import เสร็จ) -->
+            <div class="import-summary d-none" id="importSummaryBlock">
+              <div class="import-summary__icon" id="importSummaryIcon">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <h3 class="import-summary__title" id="importSummaryTitle">Import Success</h3>
+              <div class="import-summary__stats">
+                <div class="import-summary__stat">
+                  <span class="import-summary__value" id="sumTotal">0</span>
+                  <span class="import-summary__label">ทั้งหมด</span>
+                </div>
+                <div class="import-summary__stat">
+                  <span class="import-summary__value" id="sumSuccess">0</span>
+                  <span class="import-summary__label">สำเร็จ</span>
+                </div>
+                <div class="import-summary__stat">
+                  <span class="import-summary__value" id="sumFailed">0</span>
+                  <span class="import-summary__label">ไม่สำเร็จ</span>
+                </div>
+                <div class="import-summary__stat">
+                  <span class="import-summary__value" id="sumSkipped">0</span>
+                  <span class="import-summary__label">ข้าม (ข้อมูลผิด/ซ้ำ)</span>
+                </div>
+                <div class="import-summary__stat">
+                  <span class="import-summary__value" id="sumTime">0s</span>
+                  <span class="import-summary__label">เวลาที่ใช้</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary-brown" id="btnGoToDashboard">
+                <i class="fa-solid fa-chart-pie"></i> ไปที่ Dashboard
+              </button>
+              <button type="button" class="btn btn-outline-secondary" id="btnImportAnother">
+                <i class="fa-solid fa-file-import"></i> Import ไฟล์อื่น
+              </button>
+            </div>
+
+          </div>
+
+          <!-- ---- Wizard Navigation ---- -->
+          <div class="wizard-nav" id="wizardNav">
+            <button type="button" class="btn btn-outline-secondary" id="btnWizardBack" disabled>
+              <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
+            </button>
+            <button type="button" class="btn btn-primary-brown" id="btnWizardNext" disabled>
+              ถัดไป <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button type="button" class="btn btn-import-confirm d-none" id="btnWizardImport">
+              <i class="fa-solid fa-upload"></i> เริ่ม Import
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= IMPORT HISTORY ================= -->
+    <section class="page-section active" id="historySection">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Import History</h2>
+        </div>
+        <div class="panel__body table-responsive">
+          <table class="table app-table" id="tblImportHistory">
+            <thead>
+              <tr>
+                <th>วันที่</th>
+                <th>ผู้ใช้งาน</th>
+                <th>ชื่อไฟล์</th>
+                <th>Mode</th>
+                <th class="text-end">จำนวนแถว</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody><!-- render by import.js --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>Marketing Budget Dashboard &middot; Excel Import Wizard</span>
+  </footer>
+</div>
+
+<!-- ===================================================== -->
+<!-- SCRIPTS                                                -->
+<!-- ===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- App scripts ที่ใช้ร่วมกัน -->
+<script src="assets/js/config.js"></script>
+
+<!-- App scripts เฉพาะหน้า Import (โหลดตามลำดับ dependency) -->
+<script src="assets/js/excel-reader.js"></script>
+<script src="assets/js/mapping.js"></script>
+<script src="assets/js/validator.js"></script>
+<script src="assets/js/import-api.js"></script>
+<script src="assets/js/import.js"></script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Budget Dashboard</title>
+<meta name="description" content="ระบบติดตามงบประมาณโปรเจกต์การตลาด เชื่อมต่อ Google Sheets">
+
+<!-- ===== Favicon ===== -->
+<link rel="icon" href="data:,">
+
+<!-- ===== Google Fonts: Prompt (Display) / Sarabun (Body) / IBM Plex Mono (ตัวเลข) ===== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ===== Bootstrap 5 ===== -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- ===== Font Awesome ===== -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- ===== Custom Stylesheet (Theme: White + Beige + Brown) ===== -->
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ===================================================== -->
+<!-- LOADING OVERLAY (แสดงตอนโหลดข้อมูลครั้งแรก / sync)      -->
+<!-- ===================================================== -->
+<div id="app-loading" class="app-loading">
+  <div class="loading-cup" aria-hidden="true">
+    <div class="loading-cup__liquid"></div>
+  </div>
+  <p class="loading-text">กำลังโหลดข้อมูลงบประมาณ...</p>
+</div>
+
+<!-- ===================================================== -->
+<!-- SIDEBAR NAVIGATION                                     -->
+<!-- ===================================================== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__brand">
+    <span class="brand-mark"><i class="fa-solid fa-mug-saucer"></i></span>
+    <div class="brand-text">
+      <span class="brand-title">Budget<strong>Desk</strong></span>
+      <span class="brand-subtitle">Marketing Dashboard</span>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav" id="sidebarNav">
+    <a href="#dashboard" class="nav-link active" data-section="dashboard">
+      <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+    </a>
+    <a href="#projects" class="nav-link" data-section="projects">
+      <i class="fa-solid fa-layer-group"></i><span>Projects</span>
+    </a>
+    <a href="import.html" class="nav-link" data-section="import">
+      <i class="fa-solid fa-file-import"></i><span>Import Data</span>
+    </a>
+    <a href="#reports" class="nav-link" data-section="reports">
+      <i class="fa-solid fa-file-export"></i><span>Reports</span>
+    </a>
+    <a href="#settings" class="nav-link" data-section="settings">
+      <i class="fa-solid fa-gear"></i><span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="sidebar__footer">
+    <button class="btn-collapse" id="btnCollapseSidebar" aria-label="ย่อเมนู">
+      <i class="fa-solid fa-angles-left"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ===================================================== -->
+<!-- MAIN CONTENT WRAPPER                                   -->
+<!-- ===================================================== -->
+<div class="main-wrapper">
+
+  <!-- ===== TOPBAR ===== -->
+  <header class="topbar">
+    <button class="topbar__menu-btn" id="btnToggleSidebar" aria-label="เปิด/ปิดเมนู">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <div class="topbar__title">
+      <h1 id="pageTitle">Dashboard</h1>
+      <p id="pageSubtitle" class="text-muted-sm">ภาพรวมงบประมาณการตลาดทั้งหมด</p>
+    </div>
+
+    <!-- ===== Global Filters ===== -->
+    <div class="topbar__filters" id="globalFilters">
+      <select class="form-select form-select-sm" id="filterYear" aria-label="เลือกปี">
+        <option value="">ทุกปี</option>
+      </select>
+      <select class="form-select form-select-sm" id="filterMonth" aria-label="เลือกเดือน">
+        <option value="">ทุกเดือน</option>
+      </select>
+      <select class="form-select form-select-sm" id="filterProject" aria-label="เลือกโปรเจกต์">
+        <option value="">ทุกโปรเจกต์</option>
+      </select>
+      <button class="btn btn-sync" id="btnSync" title="รีเฟรชข้อมูลจาก Google Sheets">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index:1080;"></div>
+
+  <!-- ===================================================== -->
+  <!-- MAIN CONTENT AREA                                      -->
+  <!-- ===================================================== -->
+  <main class="content" id="content">
+
+    <!-- ================= DASHBOARD SECTION ================= -->
+    <section class="page-section active" id="dashboard-section" data-section="dashboard">
+
+      <!-- ---- Stat Cards ---- -->
+      <div class="row g-3 stat-cards-row">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card__icon icon-brown"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="stat-card__body">
+              <span class="stat-card__label">Total Budget</span>
+              <span class="stat-card__value" id="statTotalBudget">฿0</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card__icon icon-clay"><i class="fa-solid fa-receipt"></i></div>
+            <div class="stat-card__body">
+              <span class="stat-card__label">Total Expense</span>
+              <span class="stat-card__value" id="statTotalExpense">฿0</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card__icon icon-sage"><i class="fa-solid fa-piggy-bank"></i></div>
+            <div class="stat-card__body">
+              <span class="stat-card__label">Remaining Budget</span>
+              <span class="stat-card__value" id="statRemaining">฿0</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card stat-card--ring">
+            <div class="ring-gauge" id="ringGauge" data-percent="0">
+              <svg viewBox="0 0 120 120" class="ring-gauge__svg">
+                <defs>
+                  <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#A97142"></stop>
+                    <stop offset="100%" stop-color="#6B4423"></stop>
+                  </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="50" class="ring-gauge__track"></circle>
+                <circle cx="60" cy="60" r="50" class="ring-gauge__fill" id="ringGaugeFill"></circle>
+              </svg>
+              <div class="ring-gauge__center">
+                <span class="ring-gauge__percent" id="statUsagePercent">0%</span>
+                <span class="ring-gauge__label">Budget Usage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 stat-cards-row-secondary">
+        <div class="col-6 col-md-3">
+          <div class="mini-stat">
+            <i class="fa-solid fa-diagram-project"></i>
+            <div>
+              <span class="mini-stat__value" id="statProjectCount">0</span>
+              <span class="mini-stat__label">โปรเจกต์ทั้งหมด</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="mini-stat">
+            <i class="fa-solid fa-list-check"></i>
+            <div>
+              <span class="mini-stat__value" id="statExpenseCount">0</span>
+              <span class="mini-stat__label">รายการค่าใช้จ่าย</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Charts ---- -->
+      <div class="row g-3 charts-row">
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Used vs Remaining</h2>
+            </div>
+            <div class="panel__body chart-holder">
+              <canvas id="chartBudgetPie"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Budget by Category</h2>
+            </div>
+            <div class="panel__body chart-holder">
+              <canvas id="chartCategoryBar"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Monthly Expense</h2>
+            </div>
+            <div class="panel__body chart-holder">
+              <canvas id="chartMonthlyLine"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Tables ---- -->
+      <div class="row g-3 tables-row">
+        <div class="col-12 col-lg-7">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Recent Expense</h2>
+            </div>
+            <div class="panel__body table-responsive">
+              <table class="table app-table" id="tblRecentExpense">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Project</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody><!-- render by script.js --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Top 10 Projects</h2>
+            </div>
+            <div class="panel__body table-responsive">
+              <table class="table app-table" id="tblTopProjects">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th class="text-end">Used %</th>
+                  </tr>
+                </thead>
+                <tbody><!-- render by script.js --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PROJECTS SECTION ================= -->
+    <section class="page-section" id="projects-section" data-section="projects">
+      <div class="section-toolbar">
+        <div class="section-toolbar__search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="search" id="projectSearchInput" placeholder="ค้นหาโปรเจกต์...">
+        </div>
+        <button class="btn btn-primary-brown" id="btnAddProject">
+          <i class="fa-solid fa-plus"></i> Add Project
+        </button>
+      </div>
+
+      <div class="row g-3" id="projectCardGrid">
+        <!-- Project cards render here by script.js -->
+      </div>
+    </section>
+
+    <!-- ================= PROJECT DETAIL SECTION ================= -->
+    <section class="page-section" id="project-detail-section" data-section="project-detail">
+      <button class="btn btn-back" id="btnBackToProjects">
+        <i class="fa-solid fa-arrow-left"></i> กลับไปหน้า Projects
+      </button>
+
+      <div class="project-detail-header panel">
+        <div class="panel__body">
+          <div class="pd-header__top">
+            <div>
+              <h2 id="pdProjectName">ชื่อโปรเจกต์</h2>
+              <span class="badge-status" id="pdProjectStatus">Active</span>
+            </div>
+            <button class="btn btn-primary-brown" id="btnAddExpenseFromDetail">
+              <i class="fa-solid fa-plus"></i> Add Expense
+            </button>
+          </div>
+
+          <div class="pd-header__stats">
+            <div class="pd-stat">
+              <span class="pd-stat__label">Budget</span>
+              <span class="pd-stat__value" id="pdBudget">฿0</span>
+            </div>
+            <div class="pd-stat">
+              <span class="pd-stat__label">Expense</span>
+              <span class="pd-stat__value" id="pdExpense">฿0</span>
+            </div>
+            <div class="pd-stat">
+              <span class="pd-stat__label">Remaining</span>
+              <span class="pd-stat__value" id="pdRemaining">฿0</span>
+            </div>
+          </div>
+
+          <div class="progress app-progress">
+            <div class="progress-bar" id="pdProgressBar" role="progressbar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <h2>รายการค่าใช้จ่ายทั้งหมด</h2>
+        </div>
+        <div class="panel__body table-responsive">
+          <table class="table app-table" id="tblProjectExpenses">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Vendor</th>
+                <th class="text-end">Amount</th>
+                <th>Remark</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody><!-- render by script.js --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= REPORTS SECTION ================= -->
+    <section class="page-section" id="reports-section" data-section="reports">
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="panel report-panel">
+            <div class="panel__header"><h2>สรุปรายเดือน</h2></div>
+            <div class="panel__body">
+              <p class="text-muted-sm">สรุปงบประมาณและค่าใช้จ่ายแยกตามเดือน</p>
+              <div class="report-export-btns">
+                <button class="btn btn-export" data-export="excel" data-report="monthly"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                <button class="btn btn-export" data-export="pdf" data-report="monthly"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button class="btn btn-export" data-export="csv" data-report="monthly"><i class="fa-solid fa-file-csv"></i> CSV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel report-panel">
+            <div class="panel__header"><h2>สรุปรายปี</h2></div>
+            <div class="panel__body">
+              <p class="text-muted-sm">สรุปงบประมาณและค่าใช้จ่ายแยกตามปี</p>
+              <div class="report-export-btns">
+                <button class="btn btn-export" data-export="excel" data-report="yearly"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                <button class="btn btn-export" data-export="pdf" data-report="yearly"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button class="btn btn-export" data-export="csv" data-report="yearly"><i class="fa-solid fa-file-csv"></i> CSV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel report-panel">
+            <div class="panel__header"><h2>สรุปตาม Project</h2></div>
+            <div class="panel__body">
+              <p class="text-muted-sm">สรุปงบประมาณและค่าใช้จ่ายแยกตามโปรเจกต์</p>
+              <div class="report-export-btns">
+                <button class="btn btn-export" data-export="excel" data-report="project"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                <button class="btn btn-export" data-export="pdf" data-report="project"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button class="btn btn-export" data-export="csv" data-report="project"><i class="fa-solid fa-file-csv"></i> CSV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS SECTION ================= -->
+    <section class="page-section" id="settings-section" data-section="settings">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Category</h2>
+              <button class="btn btn-sm btn-primary-brown" id="btnAddCategory"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
+            <div class="panel__body table-responsive">
+              <table class="table app-table" id="tblCategories">
+                <thead><tr><th>Category Name</th><th class="text-center">Action</th></tr></thead>
+                <tbody><!-- render by script.js --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="panel">
+            <div class="panel__header"><h2>Budget Year</h2></div>
+            <div class="panel__body table-responsive">
+              <table class="table app-table" id="tblYears">
+                <thead><tr><th>Year</th><th class="text-center">Action</th></tr></thead>
+                <tbody><!-- render by script.js --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel__header"><h2>Theme</h2></div>
+            <div class="panel__body">
+              <div class="theme-switch">
+                <label class="theme-option">
+                  <input type="radio" name="themeOption" value="light" checked>
+                  <span>Bright (White + Beige + Brown)</span>
+                </label>
+                <label class="theme-option">
+                  <input type="radio" name="themeOption" value="dark">
+                  <span>Dark</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>Marketing Budget Dashboard &middot; เชื่อมต่อกับ Google Sheets แบบ Real-time</span>
+  </footer>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL: Add / Edit Expense                              -->
+<!-- ===================================================== -->
+<div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="expenseForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="expenseModalTitle">Add Expense</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="expenseId">
+          <input type="hidden" id="expenseProjectId">
+
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" id="expenseDate" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="expenseCategory" required>
+              <option value="">เลือก Category</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-control" id="expenseDescription" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Vendor</label>
+            <input type="text" class="form-control" id="expenseVendor">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amount</label>
+            <input type="number" class="form-control" id="expenseAmount" min="0" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Remark</label>
+            <textarea class="form-control" id="expenseRemark" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary-brown">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL: Add / Edit Project                              -->
+<!-- ===================================================== -->
+<div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="projectForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="projectModalTitle">Add Project</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="projectId">
+          <div class="mb-3">
+            <label class="form-label">Project Name</label>
+            <input type="text" class="form-control" id="projectName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Budget</label>
+            <input type="number" class="form-control" id="projectBudget" min="0" step="0.01" required>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" id="projectStartDate" required>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-control" id="projectEndDate" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="projectStatus">
+              <option value="Active">Active</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary-brown">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL: Add Category                                    -->
+<!-- ===================================================== -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="categoryForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="categoryId">
+          <div class="mb-3">
+            <label class="form-label">Category Name</label>
+            <input type="text" class="form-control" id="categoryName" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary-brown">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- SCRIPTS                                                -->
+<!-- ===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- App scripts (โหลดตามลำดับ dependency) -->
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/script.js"></script>
+</body>
+</html>
