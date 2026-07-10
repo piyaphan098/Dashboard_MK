@@ -1,0 +1,8 @@
+{
+  "name": "dashboard-mk",
+  "compatibility_date": "2026-07-10",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "404-page"
+  }
+}
