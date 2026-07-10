@@ -124,6 +124,7 @@
             <div class="stat-card__body">
               <span class="stat-card__label">Total Budget</span>
               <span class="stat-card__value" id="statTotalBudget">฿0</span>
+              <span class="stat-card__caption" id="statBudgetCaption"></span>
             </div>
           </div>
         </div>
@@ -410,10 +411,13 @@
 
         <div class="col-12 col-lg-6">
           <div class="panel">
-            <div class="panel__header"><h2>Budget Year</h2></div>
+            <div class="panel__header">
+              <h2>Budget Year</h2>
+              <button class="btn btn-sm btn-primary-brown" id="btnAddYear"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
             <div class="panel__body table-responsive">
               <table class="table app-table" id="tblYears">
-                <thead><tr><th>Year</th><th class="text-center">Action</th></tr></thead>
+                <thead><tr><th>Year</th><th class="text-end">Budget</th><th class="text-center">Action</th></tr></thead>
                 <tbody><!-- render by script.js --></tbody>
               </table>
             </div>
@@ -563,6 +567,37 @@
           <div class="mb-3">
             <label class="form-label">Category Name</label>
             <input type="text" class="form-control" id="categoryName" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary-brown">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL: Add Budget Year                                 -->
+<!-- ===================================================== -->
+<div class="modal fade" id="yearModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="yearForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="yearModalTitle">Add Budget Year</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="yearId">
+          <div class="mb-3">
+            <label class="form-label">Year (ให้ตรงกับปีใน Date ของ Expense เช่น 2026)</label>
+            <input type="text" class="form-control" id="yearValue" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Budget ของปีนี้ (บาท)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="yearBudget" required>
           </div>
         </div>
         <div class="modal-footer">

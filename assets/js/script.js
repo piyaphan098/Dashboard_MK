@@ -46,7 +46,7 @@
       state.projects = (data.projects || []).map(normalizeProject);
       state.expenses = (data.expenses || []).map(normalizeExpense);
       state.categories = data.categories || [];
-      state.years = data.years || [];
+      state.years = (data.years || []).map(normalizeYear);
 
       populateFilterOptions();
       renderAll();
@@ -67,6 +67,13 @@
       StartDate: p.StartDate,
       EndDate: p.EndDate,
       Status: p.Status || 'Active'
+    };
+  }
+  function normalizeYear(y) {
+    return {
+      YearID: y.YearID,
+      Year: String(y.Year),
+      Budget: Number(y.Budget) || 0
     };
   }
   function normalizeExpense(e) {
@@ -130,7 +137,24 @@
 
   function renderDashboardSection() {
     const filteredExpenses = getFilteredExpenses();
-    const totalBudget = state.projects.reduce((s, p) => s + p.Budget, 0);
+
+    // งบจากโปรเจกต์ — รวม Budget ของทุกโปรเจกต์ (ใช้เทียบเฉยๆ ไม่ใช่ตัวเลขหลักอีกต่อไป)
+    const projectAllocatedBudget = state.projects.reduce((s, p) => s + p.Budget, 0);
+
+    // งบของปี — ตัวเลขหลักที่ใช้คำนวณ Remaining / % Usage
+    // ถ้าเลือกปีที่ Filter ไว้ ใช้ Budget ของปีนั้นจาก Settings > Budget Year
+    // ถ้าเลือก "ทุกปี" ใช้ผลรวม Budget ของทุกปีที่ตั้งไว้
+    let totalBudget = 0;
+    let yearBudgetFound = true;
+    if (state.filters.year) {
+      const y = state.years.find(y => String(y.Year) === String(state.filters.year));
+      totalBudget = y ? y.Budget : 0;
+      yearBudgetFound = !!y;
+    } else {
+      totalBudget = state.years.reduce((s, y) => s + y.Budget, 0);
+      yearBudgetFound = state.years.length > 0;
+    }
+
     const totalExpense = filteredExpenses.reduce((s, e) => s + e.Amount, 0);
     const remaining = totalBudget - totalExpense;
     const usagePct = totalBudget > 0 ? Math.min(100, Math.round((totalExpense / totalBudget) * 100)) : 0;
@@ -141,6 +165,16 @@
     $('#statUsagePercent').textContent = usagePct + '%';
     $('#statProjectCount').textContent = state.projects.length;
     $('#statExpenseCount').textContent = filteredExpenses.length;
+
+    const captionEl = $('#statBudgetCaption');
+    if (!yearBudgetFound) {
+      captionEl.textContent = 'ยังไม่ได้ตั้งงบของปีนี้ใน Settings > Budget Year';
+      captionEl.classList.add('is-over');
+    } else {
+      const allocPct = totalBudget > 0 ? Math.round((projectAllocatedBudget / totalBudget) * 100) : 0;
+      captionEl.textContent = `จัดสรรจากโปรเจกต์: ${fmtMoney(projectAllocatedBudget)} (${allocPct}% ของงบปี)`;
+      captionEl.classList.toggle('is-over', projectAllocatedBudget > totalBudget);
+    }
 
     const circumference = 314.16;
     $('#ringGaugeFill').style.strokeDashoffset = circumference - (circumference * usagePct / 100);
@@ -347,10 +381,12 @@
     $('#btnAddProject').addEventListener('click', () => openProjectModal());
     $('#btnAddExpenseFromDetail').addEventListener('click', () => openExpenseModal(null, state.currentProjectId));
     $('#btnAddCategory').addEventListener('click', () => openCategoryModal());
+    $('#btnAddYear').addEventListener('click', () => openYearModal());
 
     $('#projectForm').addEventListener('submit', onSubmitProject);
     $('#expenseForm').addEventListener('submit', onSubmitExpense);
     $('#categoryForm').addEventListener('submit', onSubmitCategory);
+    $('#yearForm').addEventListener('submit', onSubmitYear);
   }
 
   function bsModal(id) {
@@ -464,13 +500,43 @@
     })));
   }
 
+  function openYearModal(yearId) {
+    const y = yearId ? state.years.find(x => String(x.YearID) === String(yearId)) : null;
+    $('#yearModalTitle') && ($('#yearModalTitle').textContent = y ? 'Edit Budget Year' : 'Add Budget Year');
+    $('#yearId').value = y ? y.YearID : '';
+    $('#yearValue').value = y ? y.Year : '';
+    $('#yearBudget').value = y ? y.Budget : '';
+    bsModal('yearModal').show();
+  }
+
+  async function onSubmitYear(ev) {
+    ev.preventDefault();
+    const id = $('#yearId').value;
+    const payload = {
+      YearID: id || undefined,
+      Year: $('#yearValue').value.trim(),
+      Budget: Number($('#yearBudget').value) || 0
+    };
+    try {
+      if (id) await Api.updateYear(payload); else await Api.addYear(payload);
+      bsModal('yearModal').hide();
+      toast('บันทึกปีงบประมาณสำเร็จ', 'success');
+      await loadData(false);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
   function renderYearsTable() {
     const tbody = $('#tblYears tbody');
     tbody.innerHTML = state.years.length ? state.years.map(y => `
       <tr>
         <td>${escapeHtml(String(y.Year))}</td>
-        <td class="text-center"><button class="btn btn-sm btn-outline-danger btn-delete-year" data-id="${y.YearID}"><i class="fa-solid fa-trash"></i></button></td>
-      </tr>`).join('') : emptyRow(2, 'ยังไม่มีปีงบประมาณ');
+        <td class="text-end">${fmtMoney(y.Budget)}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-secondary btn-edit-year" data-id="${y.YearID}"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-year" data-id="${y.YearID}"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('') : emptyRow(3, 'ยังไม่มีปีงบประมาณ');
+    $$('.btn-edit-year').forEach(b => b.addEventListener('click', () => openYearModal(b.dataset.id)));
     $$('.btn-delete-year').forEach(b => b.addEventListener('click', () => confirmDelete('ปีงบประมาณ', async () => {
       await Api.deleteYear(b.dataset.id); toast('ลบสำเร็จ', 'success'); await loadData(false);
     })));

@@ -356,6 +356,11 @@ select:focus-visible, textarea:focus-visible{
   font-size:1.35rem; color:var(--text-strong);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
+.stat-card__caption{
+  font-size:.72rem; color:var(--text-muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.stat-card__caption.is-over{ color:var(--danger-500); font-weight:600; }
 
 /* ---- Ring Gauge card (Signature element — วงกาแฟ) ---- */
 .stat-card--ring{ justify-content:center; }

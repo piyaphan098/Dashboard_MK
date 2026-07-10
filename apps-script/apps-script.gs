@@ -7,7 +7,7 @@
  *    - Projects    : ProjectID | ProjectName | Budget | StartDate | EndDate | Status
  *    - Expenses    : ExpenseID | ProjectID | Date | Category | Description | Vendor | Amount | Remark
  *    - Categories  : CategoryID | CategoryName
- *    - Years       : Year
+ *    - Years       : YearID | Year | Budget   (Budget = งบประมาณรวมของปีนั้น ใส่เองใน Settings > Budget Year)
  * 2. เปิด Extensions > Apps Script แล้ววางโค้ดไฟล์นี้ทั้งหมด (ลบโค้ดเดิมออกก่อน)
  * 3. กด Deploy > New deployment > เลือกประเภท "Web app"
  *      - Execute as: Me
@@ -77,7 +77,10 @@ function doPost(e) {
 
       // ---- Years ----
       case 'addYear':
-        result = addRow_(SHEET_YEARS, 'YearID', ['Year'], payload);
+        result = addRow_(SHEET_YEARS, 'YearID', ['Year', 'Budget'], payload);
+        break;
+      case 'updateYear':
+        result = updateRow_(SHEET_YEARS, 'YearID', payload);
         break;
       case 'deleteYear':
         result = deleteRow_(SHEET_YEARS, 'YearID', payload.id);
