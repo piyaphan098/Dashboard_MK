@@ -13,6 +13,7 @@
   --bg-card:        #FFFFFF;   /* พื้นการ์ด/panel */
   --bg-beige:       #F1E7D8;   /* พื้นผิวรอง — เบจ */
   --bg-beige-soft:  #F7F0E4;   /* เบจอ่อนกว่า สำหรับ hover/stripe */
+  --bg-topbar:      rgba(251,247,241,.85); /* พื้นหลัง topbar แบบโปร่งแสง */
 
   /* Brand — Brown scale */
   --brown-900:      #3B2B24;   /* ข้อความหลัก / เข้มสุด */
@@ -54,6 +55,29 @@
 
   /* Motion */
   --ease-soft: cubic-bezier(.4,0,.2,1);
+}
+
+/* ---------------------------------------------------------------------
+   1b) DARK THEME — overrides design tokens when <html data-theme="dark">
+   --------------------------------------------------------------------- */
+[data-theme="dark"]{
+  --bg-page:        #1C1512;
+  --bg-card:        #241B16;
+  --bg-beige:       #2C2019;
+  --bg-beige-soft:  #33261D;
+  --bg-topbar:      rgba(28,21,18,.85);
+
+  --text-strong:    #F3EAE0;
+  --text-body:      #D8C9BA;
+  --text-muted:     #96887A;
+  --text-on-brown:  #FBF7F1;
+
+  --border-subtle:  #3A2C22;
+  --border-soft:    #33271F;
+
+  --shadow-sm:      0 1px 3px rgba(0,0,0,.35);
+  --shadow-md:      0 8px 24px rgba(0,0,0,.4);
+  --shadow-lg:      0 16px 40px rgba(0,0,0,.5);
 }
 
 /* ---------------------------------------------------------------------
@@ -235,7 +259,7 @@ select:focus-visible, textarea:focus-visible{
   position:sticky; top:0; z-index:1010;
   display:flex; align-items:center; gap:20px;
   padding:16px 32px;
-  background:rgba(251,247,241,.85);
+  background:var(--bg-topbar);
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--border-subtle);
 }
@@ -478,6 +502,9 @@ select:focus-visible, textarea:focus-visible{
 .badge-status.is-active{ background:rgba(140,155,125,.18); color:#5e6e50; }
 .badge-status.is-hold{ background:rgba(217,165,60,.18); color:#8a6d1f; }
 .badge-status.is-completed{ background:rgba(107,68,35,.15); color:var(--brown-700); }
+[data-theme="dark"] .badge-status.is-active{ background:rgba(140,155,125,.22); color:#B7C7A6; }
+[data-theme="dark"] .badge-status.is-hold{ background:rgba(217,165,60,.22); color:#E3C273; }
+[data-theme="dark"] .badge-status.is-completed{ background:rgba(201,129,79,.2); color:#E0B896; }
 
 
 /* ---------------------------------------------------------------------
@@ -567,6 +594,8 @@ select:focus-visible, textarea:focus-visible{
 .modal-content{
   border:none; border-radius:var(--radius-lg);
   box-shadow:var(--shadow-lg);
+  background:var(--bg-card);
+  color:var(--text-body);
 }
 .modal-header{ border-bottom:1px solid var(--border-soft); padding:18px 24px; }
 .modal-title{ font-family:var(--font-display); font-size:1.05rem; }
@@ -578,10 +607,14 @@ select:focus-visible, textarea:focus-visible{
   border-color:var(--border-subtle);
   font-size:.9rem;
   padding:.55rem .8rem;
+  background-color:var(--bg-card);
+  color:var(--text-strong);
 }
 .form-control:focus, .form-select:focus{
   border-color:var(--clay-500);
   box-shadow:0 0 0 .15rem rgba(169,113,66,.15);
+  background-color:var(--bg-card);
+  color:var(--text-strong);
 }
 
 
