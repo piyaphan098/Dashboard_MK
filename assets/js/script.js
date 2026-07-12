@@ -380,6 +380,11 @@
   function wireModals() {
     $('#btnAddProject').addEventListener('click', () => openProjectModal());
     $('#btnAddExpenseFromDetail').addEventListener('click', () => openExpenseModal(null, state.currentProjectId));
+    $('#btnEditProjectFromDetail').addEventListener('click', () => openProjectModal(state.currentProjectId));
+    $('#btnDeleteProjectFromDetail').addEventListener('click', () => {
+      const p = state.projects.find(x => String(x.ProjectID) === String(state.currentProjectId));
+      confirmDelete(`โปรเจกต์ "${p ? p.ProjectName : ''}" (รวมถึงรายการค่าใช้จ่ายทั้งหมด)`, () => deleteProject(state.currentProjectId));
+    });
     $('#btnAddCategory').addEventListener('click', () => openCategoryModal());
     $('#btnAddYear').addEventListener('click', () => openYearModal());
 
@@ -421,6 +426,17 @@
       bsModal('projectModal').hide();
       toast('บันทึกโปรเจกต์สำเร็จ', 'success');
       await loadData(false);
+      if (state.currentProjectId) openProjectDetail(state.currentProjectId);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  async function deleteProject(id) {
+    try {
+      await Api.deleteProject(id);
+      toast('ลบโปรเจกต์สำเร็จ', 'success');
+      state.currentProjectId = null;
+      await loadData(false);
+      goToSection('projects');
     } catch (err) { toast(err.message, 'error'); }
   }
 

@@ -54,6 +54,7 @@ function doPost(e) {
         break;
       case 'deleteProject':
         result = deleteRow_(SHEET_PROJECTS, 'ProjectID', payload.id);
+        deleteExpensesByProject_(payload.id); // ลบรายการค่าใช้จ่ายที่ผูกกับโปรเจกต์นี้ไปด้วย ป้องกันข้อมูลค้าง
         break;
 
       // ---- Expenses ----
@@ -176,6 +177,21 @@ function deleteRow_(sheetName, idField, id) {
     }
   }
   throw new Error('ไม่พบข้อมูล ' + idField + ' = ' + id);
+}
+
+// ลบรายการค่าใช้จ่าย (Expenses) ทั้งหมดที่ผูกกับ ProjectID ที่ระบุ — เรียกใช้ตอนลบโปรเจกต์
+// เพื่อไม่ให้มีรายการค่าใช้จ่ายค้างอยู่โดยไม่มีโปรเจกต์อ้างอิง
+function deleteExpensesByProject_(projectId) {
+  const sheet = getSheet_(SHEET_EXPENSES);
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const projCol = headers.indexOf('ProjectID');
+  // ลบจากแถวล่างขึ้นบน เพื่อไม่ให้เลขแถวเลื่อนระหว่างลบ
+  for (let i = values.length - 1; i >= 1; i--) {
+    if (String(values[i][projCol]) === String(projectId)) {
+      sheet.deleteRow(i + 1);
+    }
+  }
 }
 
 // เหมือน readSheet_ แต่ถ้าไม่มี Tab นี้ จะคืน [] แทนที่จะ throw (ใช้กับ Tab ที่เป็น optional เช่น ImportHistory)

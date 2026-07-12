@@ -297,9 +297,17 @@
               <h2 id="pdProjectName">ชื่อโปรเจกต์</h2>
               <span class="badge-status" id="pdProjectStatus">Active</span>
             </div>
-            <button class="btn btn-primary-brown" id="btnAddExpenseFromDetail">
-              <i class="fa-solid fa-plus"></i> Add Expense
-            </button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary" id="btnEditProjectFromDetail">
+                <i class="fa-solid fa-pen"></i> แก้ไขโปรเจกต์
+              </button>
+              <button class="btn btn-outline-danger" id="btnDeleteProjectFromDetail">
+                <i class="fa-solid fa-trash"></i> ลบโปรเจกต์
+              </button>
+              <button class="btn btn-primary-brown" id="btnAddExpenseFromDetail">
+                <i class="fa-solid fa-plus"></i> Add Expense
+              </button>
+            </div>
           </div>
 
           <div class="pd-header__stats">
@@ -472,8 +480,8 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Category</label>
-            <select class="form-select" id="expenseCategory" required>
-              <option value="">เลือก Category</option>
+            <select class="form-select" id="expenseCategory">
+              <option value="">เลือก Category (ไม่บังคับ)</option>
             </select>
           </div>
           <div class="mb-3">
