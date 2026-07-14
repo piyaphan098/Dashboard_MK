@@ -698,3 +698,68 @@ select:focus-visible, textarea:focus-visible{
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
 }
+
+/* ---------------------------------------------------------------------
+   18) LETTERS — Sponsor letter print tool
+   --------------------------------------------------------------------- */
+.letter-form .form-label{ font-size:.78rem; }
+.letter-form__actions{ display:flex; gap:10px; }
+.letter-form__actions .btn{ flex:1; }
+#ltBody{ font-size:.85rem; line-height:1.6; }
+.letter-preview-wrap{
+  background:var(--bg-beige);
+  padding:24px;
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+}
+.letter-page{
+  width:210mm;
+  min-height:297mm;
+  background:#FFFFFF;
+  color:#1a1a1a;
+  padding:18mm 20mm;
+  box-shadow:var(--shadow-lg);
+  font-family:var(--font-body);
+  font-size:14px;
+  line-height:1.85;
+  flex:0 0 auto;
+  zoom:1;
+  display:flex;
+  flex-direction:column;
+}
+.letter-page__logo{
+  display:flex; justify-content:center; align-items:center;
+  margin-bottom:14px;
+}
+.letter-page__logo-img{ height:70px; width:auto; object-fit:contain; }
+.letter-page__date{ text-align:center; margin-bottom:16px; }
+.letter-page__meta{ margin-bottom:10px; }
+.letter-page__meta > div{ display:grid; grid-template-columns:60px 1fr; gap:10px; margin-bottom:4px; }
+.letter-page__label{ width:auto; }
+.letter-page__body{ white-space:pre-wrap; text-align:justify; margin:16px 0 26px; }
+.letter-page__closing{ text-align:center; margin-bottom:44px; }
+.letter-page__signature{ text-align:center; margin-bottom:0; }
+.letter-page__sign-line{ margin-bottom:6px; letter-spacing:2px; color:#888; }
+.letter-page__footer{
+  font-size:.72rem; color:#555; text-align:center;
+  margin-top:auto;
+  padding-top:10px;
+}
+
+@media print{
+  body *{ visibility:hidden; }
+  #letterPreview, #letterPreview *{ visibility:visible; }
+  #letterPreview{
+    position:absolute; top:0; left:0;
+    width:210mm; min-height:297mm;
+    margin:0; padding:18mm 20mm; box-shadow:none;
+    zoom:1 !important;
+  }
+  /* ซ่อนแถบเมนู/topbar และคอลัมน์อื่นๆ ที่ไม่ใช่ตัวจดหมายไปเลย (ไม่ใช่แค่ซ่อนแต่ยังเหลือพื้นที่)
+     ป้องกันไม่ให้เกิดหน้ากระดาษเปล่าเพิ่มมาหลังหน้าจดหมาย */
+  .sidebar, .topbar{ display:none !important; }
+  .main-wrapper{ margin-left:0 !important; }
+  .content{ padding:0 !important; }
+  @page{ size:A4; margin:0; }
+}

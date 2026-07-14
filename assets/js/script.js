@@ -9,6 +9,7 @@
     expenses: [],
     categories: [],
     years: [],
+    letters: [],
     filters: { year: '', month: '', project: '' },
     currentProjectId: null,
     charts: {}
@@ -29,10 +30,19 @@
     wireModals();
     wireReports();
     wireTheme();
+    wireLetters();
+    applyChartDefaults();
 
     await loadData(true);
 
     $('#btnSync').addEventListener('click', () => loadData(true));
+  }
+
+  function applyChartDefaults() {
+    if (typeof Chart === 'undefined') return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    Chart.defaults.color = isDark ? '#D8C9BA' : '#5B4A40';
+    Chart.defaults.borderColor = isDark ? '#3A2C22' : '#E9DECB';
   }
 
   async function loadData(showOverlay) {
@@ -47,9 +57,11 @@
       state.expenses = (data.expenses || []).map(normalizeExpense);
       state.categories = data.categories || [];
       state.years = (data.years || []).map(normalizeYear);
+      state.letters = (data.letters || []).slice().sort((a, b) => String(b.LetterID).localeCompare(String(a.LetterID)));
 
       populateFilterOptions();
       renderAll();
+      renderLettersTable();
       toast('โหลดข้อมูลจาก Google Sheets สำเร็จ', 'success');
     } catch (err) {
       console.error(err);
@@ -352,6 +364,7 @@
     projects: ['Projects', 'จัดการโปรเจกต์ทั้งหมด'],
     'project-detail': ['Project Detail', 'รายละเอียดโปรเจกต์'],
     reports: ['Reports', 'ออกรายงานสรุปงบประมาณ'],
+    letters: ['Letters', 'พิมพ์จดหมายขอบคุณ / ขอรับการสนับสนุนสปอนเซอร์'],
     settings: ['Settings', 'ตั้งค่าระบบ']
   };
 
@@ -367,6 +380,11 @@
     $('#pageSubtitle').textContent = subtitle;
 
     $('#globalFilters').style.display = (section === 'dashboard') ? 'flex' : 'none';
+
+    if (section === 'letters') {
+      // ต้องรอให้ section โชว์ก่อน ถึงจะวัดความกว้างจริงได้
+      requestAnimationFrame(fitLetterPage);
+    }
   }
 
   function wireTopbar() {
@@ -380,11 +398,6 @@
   function wireModals() {
     $('#btnAddProject').addEventListener('click', () => openProjectModal());
     $('#btnAddExpenseFromDetail').addEventListener('click', () => openExpenseModal(null, state.currentProjectId));
-    $('#btnEditProjectFromDetail').addEventListener('click', () => openProjectModal(state.currentProjectId));
-    $('#btnDeleteProjectFromDetail').addEventListener('click', () => {
-      const p = state.projects.find(x => String(x.ProjectID) === String(state.currentProjectId));
-      confirmDelete(`โปรเจกต์ "${p ? p.ProjectName : ''}" (รวมถึงรายการค่าใช้จ่ายทั้งหมด)`, () => deleteProject(state.currentProjectId));
-    });
     $('#btnAddCategory').addEventListener('click', () => openCategoryModal());
     $('#btnAddYear').addEventListener('click', () => openYearModal());
 
@@ -426,17 +439,6 @@
       bsModal('projectModal').hide();
       toast('บันทึกโปรเจกต์สำเร็จ', 'success');
       await loadData(false);
-      if (state.currentProjectId) openProjectDetail(state.currentProjectId);
-    } catch (err) { toast(err.message, 'error'); }
-  }
-
-  async function deleteProject(id) {
-    try {
-      await Api.deleteProject(id);
-      toast('ลบโปรเจกต์สำเร็จ', 'success');
-      state.currentProjectId = null;
-      await loadData(false);
-      goToSection('projects');
     } catch (err) { toast(err.message, 'error'); }
   }
 
@@ -573,6 +575,207 @@
       });
     });
   }
+
+  /* ------------------------------------------------------------------ */
+  /* LETTERS — Sponsor thank-you / request letter print tool             */
+  /* ------------------------------------------------------------------ */
+  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  function toThaiDate(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr + 'T00:00:00');
+    if (isNaN(d)) return '';
+    return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
+  }
+
+  const LETTER_TEMPLATES = {
+    thanks: (v) => `สนามกอล์ฟกรีนวูด ขอขอบพระคุณท่านเป็นอย่างสูงที่ได้ให้การสนับสนุนการจัดการแข่งขัน “${v.event}”${v.eventDate ? ` เมื่อวัน${v.eventDate}` : ''} เป็นจำนวนเงิน ${v.amount} บาท
+
+การสนับสนุนของท่านมีส่วนสำคัญอย่างยิ่งในการส่งเสริมศักยภาพ ความสามารถ และสร้างขวัญกำลังใจให้แก่แคดดี้ ซึ่งเป็นบุคลากรสำคัญในวงการกีฬากอล์ฟ ทางสนามกอล์ฟจึงขอขอบคุณมา ณ โอกาสนี้`,
+    request: (v) => `สนามกอล์ฟกรีนวูด มีความประสงค์จัดการแข่งขัน “${v.event}”${v.eventDate ? ` ในวัน${v.eventDate}` : ''} เพื่อส่งเสริมศักยภาพ ความสามารถ และสร้างขวัญกำลังใจให้แก่แคดดี้ ซึ่งเป็นบุคลากรสำคัญในวงการกีฬากอล์ฟ
+
+ในการนี้ ทางสนามกอล์ฟจึงใคร่ขอรับการสนับสนุนจากท่านเป็นจำนวนเงิน ${v.amount} บาท เพื่อร่วมเป็นส่วนหนึ่งในการผลักดันและยกระดับกิจกรรมการแข่งขันครั้งนี้ให้สำเร็จลุล่วงไปด้วยดี`
+  };
+
+  const LETTER_SUBJECT_DEFAULT = {
+    thanks: 'ขอบคุณการสนับสนุนการจัดการแข่งขันแคดดี้',
+    request: 'ขอรับการสนับสนุนการจัดการแข่งขันแคดดี้'
+  };
+
+  function wireLetters() {
+    const liveIds = ['ltType','ltDate','ltSubject','ltRecipientName','ltCompany','ltEvent','ltEventDate','ltAmount','ltBody','ltClosing','ltSignerName','ltSignerRole','ltPhone'];
+    liveIds.forEach(id => $('#' + id)?.addEventListener('input', renderLetterPreview));
+
+    $('#ltType').addEventListener('change', () => {
+      // เปลี่ยนประเภทจดหมาย -> เติมเรื่อง+เนื้อหาเริ่มต้นให้ ถ้าผู้ใช้ยังไม่ได้แก้เอง
+      const type = $('#ltType').value;
+      const subjectEl = $('#ltSubject');
+      const bodyEl = $('#ltBody');
+      if (!subjectEl.dataset.touched) subjectEl.value = LETTER_SUBJECT_DEFAULT[type];
+      if (!bodyEl.dataset.touched) bodyEl.value = LETTER_TEMPLATES[type](getLetterTemplateVars());
+      renderLetterPreview();
+    });
+    $('#ltSubject').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
+    $('#ltBody').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
+    // การแก้ event/eventDate/amount ควรอัปเดตเนื้อหาอัตโนมัติ "จนกว่า" ผู้ใช้จะเริ่มพิมพ์เนื้อหาเอง
+    ['ltEvent','ltEventDate','ltAmount'].forEach(id => $('#' + id)?.addEventListener('input', () => {
+      if (!$('#ltBody').dataset.touched) $('#ltBody').value = LETTER_TEMPLATES[$('#ltType').value](getLetterTemplateVars());
+    }));
+
+    $('#btnPrintLetter').addEventListener('click', () => window.print());
+    $('#btnNewLetter').addEventListener('click', resetLetterForm);
+    $('#btnSaveLetter').addEventListener('click', saveLetter);
+
+    window.addEventListener('resize', debounce(fitLetterPage, 150));
+    resetLetterForm();
+  }
+
+  function getLetterTemplateVars() {
+    const amountNum = Number($('#ltAmount').value) || 0;
+    return {
+      event: $('#ltEvent').value.trim() || '……………………',
+      eventDate: toThaiDate($('#ltEventDate').value),
+      amount: amountNum ? amountNum.toLocaleString('th-TH') : '……………………'
+    };
+  }
+
+  function resetLetterForm() {
+    $('#ltLetterId').value = '';
+    $('#ltType').value = 'thanks';
+    $('#ltDate').value = new Date().toISOString().slice(0, 10);
+    $('#ltSubject').value = LETTER_SUBJECT_DEFAULT.thanks;
+    $('#ltSubject').dataset.touched = '';
+    $('#ltRecipientName').value = '';
+    $('#ltCompany').value = '';
+    $('#ltEvent').value = '';
+    $('#ltEventDate').value = '';
+    $('#ltAmount').value = '';
+    $('#ltBody').value = LETTER_TEMPLATES.thanks(getLetterTemplateVars());
+    $('#ltBody').dataset.touched = '';
+    $('#ltClosing').value = 'ขอแสดงความนับถือ';
+    $('#ltSignerName').value = 'คุณปิยะพันธ์ รัตนวิจิตร';
+    $('#ltSignerRole').value = 'ผู้จัดการฝ่ายบริหารจัดการกีฬากอล์ฟ';
+    $('#ltPhone').value = '02-0266494';
+    renderLetterPreview();
+  }
+
+  function fitLetterPage() {
+    const wrap = $('.letter-preview-wrap');
+    const page = $('#letterPreview');
+    if (!wrap || !page || wrap.clientWidth === 0) return;
+    page.style.zoom = 1;
+    const available = wrap.clientWidth - 32; // เผื่อ padding รอบๆ
+    const natural = page.offsetWidth;
+    const scale = natural > available ? Math.max(0.4, available / natural) : 1;
+    page.style.zoom = scale;
+  }
+
+  function debounce(fn, wait) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+  }
+
+  function renderLetterPreview() {
+    const type = $('#ltType').value;
+
+    $('#ltPrevDate').textContent = toThaiDate($('#ltDate').value) || '……………………';
+    $('#ltPrevSubject').textContent = $('#ltSubject').value.trim() || LETTER_SUBJECT_DEFAULT[type];
+
+    const recipientName = $('#ltRecipientName').value.trim();
+    const companyName = $('#ltCompany').value.trim();
+    $('#ltPrevRecipient').textContent = recipientName
+      ? `${recipientName}${companyName ? ' ' + companyName : ''}`
+      : '……………………';
+
+    $('#ltPrevBody').textContent = $('#ltBody').value;
+    $('#ltPrevClosing').textContent = $('#ltClosing').value.trim() || 'ขอแสดงความนับถือ';
+    $('#ltPrevSignerName').textContent = $('#ltSignerName').value.trim() || '……………………';
+    $('#ltPrevSignerRole').textContent = $('#ltSignerRole').value.trim();
+    $('#ltPrevPhone').textContent = $('#ltPhone').value.trim();
+  }
+
+  function getLetterFormPayload() {
+    return {
+      LetterID: $('#ltLetterId').value || undefined,
+      Date: $('#ltDate').value,
+      Type: $('#ltType').value,
+      Subject: $('#ltSubject').value.trim(),
+      RecipientName: $('#ltRecipientName').value.trim(),
+      Company: $('#ltCompany').value.trim(),
+      Event: $('#ltEvent').value.trim(),
+      EventDate: $('#ltEventDate').value,
+      Amount: Number($('#ltAmount').value) || 0,
+      Body: $('#ltBody').value,
+      Closing: $('#ltClosing').value.trim() || 'ขอแสดงความนับถือ',
+      SignerName: $('#ltSignerName').value.trim(),
+      SignerRole: $('#ltSignerRole').value.trim(),
+      Phone: $('#ltPhone').value.trim()
+    };
+  }
+
+  async function saveLetter() {
+    const payload = getLetterFormPayload();
+    if (!payload.Subject || !payload.RecipientName) {
+      toast('กรุณากรอกอย่างน้อย "เรื่อง" และ "เรียน" ก่อนบันทึก', 'error');
+      return;
+    }
+    try {
+      if (payload.LetterID) {
+        await Api.updateLetter(payload);
+      } else {
+        const created = await Api.addLetter(payload);
+        $('#ltLetterId').value = created.LetterID;
+      }
+      toast('บันทึกจดหมายสำเร็จ', 'success');
+      await loadData(false);
+    } catch (err) {
+      toast('บันทึกไม่สำเร็จ: ' + err.message + ' (อาจยังไม่ได้สร้าง Tab "Letters" ใน Google Sheet)', 'error');
+    }
+  }
+
+  function loadLetterIntoForm(letterId) {
+    const l = state.letters.find(x => String(x.LetterID) === String(letterId));
+    if (!l) return;
+    $('#ltLetterId').value = l.LetterID;
+    $('#ltType').value = l.Type || 'thanks';
+    $('#ltDate').value = l.Date || '';
+    $('#ltSubject').value = l.Subject || '';
+    $('#ltSubject').dataset.touched = '1';
+    $('#ltRecipientName').value = l.RecipientName || '';
+    $('#ltCompany').value = l.Company || '';
+    $('#ltEvent').value = l.Event || '';
+    $('#ltEventDate').value = l.EventDate || '';
+    $('#ltAmount').value = l.Amount || '';
+    $('#ltBody').value = l.Body || '';
+    $('#ltBody').dataset.touched = '1';
+    $('#ltClosing').value = l.Closing || 'ขอแสดงความนับถือ';
+    $('#ltSignerName').value = l.SignerName || '';
+    $('#ltSignerRole').value = l.SignerRole || '';
+    $('#ltPhone').value = l.Phone || '';
+    renderLetterPreview();
+    toast('โหลดจดหมายเดิมแล้ว แก้ไขแล้วกด "บันทึก" เพื่ออัปเดต หรือ "สร้างใหม่" เพื่อเริ่มฉบับใหม่', 'success');
+  }
+
+  function renderLettersTable() {
+    const tbody = $('#tblLetters tbody');
+    if (!tbody) return;
+    tbody.innerHTML = state.letters.length ? state.letters.map(l => `
+      <tr>
+        <td>${escapeHtml(toThaiDate(l.Date) || l.Date || '-')}</td>
+        <td>${escapeHtml(l.Subject || '-')}<br><span class="text-muted-sm">${escapeHtml(l.RecipientName || '')}${l.Company ? ' ' + escapeHtml(l.Company) : ''}</span></td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-secondary btn-load-letter" data-id="${l.LetterID}"><i class="fa-solid fa-rotate-left"></i> โหลด</button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-letter" data-id="${l.LetterID}"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('') : emptyRow(3, 'ยังไม่มีประวัติจดหมาย (บันทึกฉบับแรกได้จากฟอร์มด้านซ้าย)');
+    $$('.btn-load-letter').forEach(b => b.addEventListener('click', () => loadLetterIntoForm(b.dataset.id)));
+    $$('.btn-delete-letter').forEach(b => b.addEventListener('click', () => confirmDelete('จดหมายฉบับนี้', async () => {
+      await Api.deleteLetter(b.dataset.id);
+      toast('ลบสำเร็จ', 'success');
+      await loadData(false);
+    })));
+  }
+
   function exportCsv() {
     const header = ['Date', 'Project', 'Category', 'Description', 'Vendor', 'Amount', 'Remark'];
     const rows = state.expenses.map(e => {
@@ -602,6 +805,8 @@
       r.addEventListener('change', () => {
         document.documentElement.setAttribute('data-theme', r.value);
         localStorage.setItem('dashboardTheme', r.value);
+        applyChartDefaults();
+        if (state.projects.length || state.expenses.length) renderDashboardSection();
       });
     });
   }

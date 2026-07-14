@@ -51,6 +51,10 @@ const Api = (() => {
 
     addYear: (p) => send('addYear', p),
     updateYear: (p) => send('updateYear', p),
-    deleteYear: (id) => send('deleteYear', { id })
+    deleteYear: (id) => send('deleteYear', { id }),
+
+    addLetter: (p) => send('addLetter', p),
+    updateLetter: (p) => send('updateLetter', p),
+    deleteLetter: (id) => send('deleteLetter', { id })
   };
 })();
