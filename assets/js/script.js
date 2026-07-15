@@ -453,9 +453,8 @@
     $('#expenseAmount').value = e ? e.Amount : '';
     $('#expenseRemark').value = e ? e.Remark : '';
 
-    const catSel = $('#expenseCategory');
-    catSel.innerHTML = '<option value="">เลือก Category</option>' + state.categories.map(c => `<option value="${escapeHtml(c.CategoryName)}">${escapeHtml(c.CategoryName)}</option>`).join('');
-    catSel.value = e ? e.Category : '';
+    $('#expenseCategoryList').innerHTML = state.categories.map(c => `<option value="${escapeHtml(c.CategoryName)}"></option>`).join('');
+    $('#expenseCategory').value = e ? e.Category : '';
 
     bsModal('expenseModal').show();
   }
@@ -467,7 +466,7 @@
       ExpenseID: id || undefined,
       ProjectID: $('#expenseProjectId').value,
       Date: $('#expenseDate').value,
-      Category: $('#expenseCategory').value,
+      Category: $('#expenseCategory').value.trim(),
       Description: $('#expenseDescription').value.trim(),
       Vendor: $('#expenseVendor').value.trim(),
       Amount: Number($('#expenseAmount').value) || 0,
