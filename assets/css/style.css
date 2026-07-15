@@ -492,6 +492,8 @@ select:focus-visible, textarea:focus-visible{
 .project-card__name{ font-family:var(--font-display); font-weight:600; font-size:1rem; color:var(--text-strong); }
 .project-card__row{ display:flex; justify-content:space-between; font-size:.82rem; color:var(--text-muted); margin-bottom:6px; }
 .project-card__row span:last-child{ font-family:var(--font-mono); color:var(--text-strong); }
+.project-card__actions{ display:flex; gap:8px; margin-top:14px; }
+.project-card__actions .btn{ flex:1; font-size:.76rem; padding:.35rem .5rem; }
 
 .badge-status{
   display:inline-flex; align-items:center; gap:6px;

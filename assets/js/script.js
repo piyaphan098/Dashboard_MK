@@ -296,6 +296,10 @@
           <div class="project-card__row"><span>Budget</span><span>${fmtMoney(p.Budget)}</span></div>
           <div class="project-card__row"><span>Used</span><span>${fmtMoney(used)} (${pct}%)</span></div>
           <div class="progress app-progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+          <div class="project-card__actions">
+            <button class="btn btn-sm btn-outline-secondary btn-edit-project" data-id="${p.ProjectID}"><i class="fa-solid fa-pen"></i> แก้ไข</button>
+            <button class="btn btn-sm btn-outline-danger btn-delete-project" data-id="${p.ProjectID}"><i class="fa-solid fa-trash"></i> ลบ</button>
+          </div>
         </div>
       </div>`;
     }).join('') : `<div class="col-12 text-center text-muted-sm py-5">ยังไม่มีโปรเจกต์ กด "Add Project" เพื่อเริ่มต้น</div>`;
@@ -303,6 +307,18 @@
     $$('.project-card').forEach(card => {
       card.addEventListener('click', () => openProjectDetail(card.dataset.id));
     });
+    $$('.btn-edit-project').forEach(b => b.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openProjectModal(b.dataset.id);
+    }));
+    $$('.btn-delete-project').forEach(b => b.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      confirmDelete('โปรเจกต์', async () => {
+        await Api.deleteProject(b.dataset.id);
+        toast('ลบโปรเจกต์สำเร็จ', 'success');
+        await loadData(false);
+      });
+    }));
   }
 
   function openProjectDetail(projectId) {
@@ -768,7 +784,7 @@
         </td>
       </tr>`).join('') : emptyRow(3, 'ยังไม่มีประวัติจดหมาย (บันทึกฉบับแรกได้จากฟอร์มด้านซ้าย)');
     $$('.btn-load-letter').forEach(b => b.addEventListener('click', () => loadLetterIntoForm(b.dataset.id)));
-    $$('.btn-delete-letter').forEach(b => b.addEventListener('click', () => confirmDelete('จดหมายฉบับนี้', async () => {
+    $$('.btn-delete-letter').forEach(b => b.addEventListener('click', () => confirmDelete('จดหมายฉบับ', async () => {
       await Api.deleteLetter(b.dataset.id);
       toast('ลบสำเร็จ', 'success');
       await loadData(false);
